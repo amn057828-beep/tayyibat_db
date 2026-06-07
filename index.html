@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصة توليد المحتوى الذكي للـ SaaS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Tajawal', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen">
+
+    <nav class="border-b border-gray-800 bg-gray-900/50 backdrop-blur px-6 py-4 flex justify-between items-center">
+        <h1 class="text-xl font-bold bg-gradient-to-l from-amber-400 to-orange-500 bg-clip-text text-transparent">منصة الخيمياء للذكاء الاصطناعي 🔮</h1>
+        <div class="flex items-center gap-4">
+            <span class="text-sm text-gray-400" id="user-display">بريد المستخدم: test@tayyibat.com</span>
+            <div class="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-3 py-1 rounded-full text-xs font-semibold">
+                النقاط: <span id="credits-count">50</span> ⭐️
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-6xl mx-auto p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <section class="md:col-span-1 bg-gray-900 border border-gray-800 rounded-2xl p-5 flex flex-col gap-4">
+            <h2 class="text-lg font-bold text-gray-200 border-b border-gray-800 pb-2">لوحة التحكم والتوليد</h2>
+            
+            <div class="flex flex-col gap-2">
+                <label class="text-sm text-gray-400">النص المراد توليده (Prompt / Script):</label>
+                <textarea id="prompt-input" rows="5" class="w-full bg-gray-950 border border-gray-800 rounded-xl p-3 text-sm text-gray-100 focus:outline-none focus:border-amber-500 resize-none" placeholder="اكتب فكرتك أو النص الخيميائي هنا..."></textarea>
+            </div>
+
+            <div class="flex flex-col gap-2">
+                <label class="text-sm text-gray-400">اختر نبرة المعلق الصوتي:</label>
+                <select id="voice-select" class="w-full bg-gray-950 border border-gray-800 rounded-xl p-3 text-sm text-gray-100 focus:outline-none focus:border-amber-500">
+                    <option value="ar-EG-ShakirNeural">شاكر (مصر) - وثائقي فخم</option>
+                    <option value="ar-SA-HamedNeural">حامد (السعودية) - رصين وعميق</option>
+                    <option value="ar-AE-HamdanNeural">حمدان (الإمارات) - هادئ وواضح</option>
+                </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 mt-2">
+                <button onclick="generateContent('audio')" class="bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl py-3 text-sm font-medium transition duration-200 active:scale-95">🎙️ توليد صوت</button>
+                <button onclick="generateContent('image')" class="bg-amber-500 hover:bg-amber-400 text-gray-950 rounded-xl py-3 text-sm font-bold transition duration-200 active:scale-95">🎨 توليد صورة</button>
+            </div>
+            
+            <button onclick="generateContent('video')" class="w-full bg-gradient-to-l from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-gray-950 font-bold py-3 rounded-xl text-sm transition duration-200 active:scale-95">🎬 توليد فيديو متحرك</button>
+        </section>
+
+        <section class="md:col-span-2 bg-gray-900 border border-gray-800 rounded-2xl p-5 flex flex-col gap-4 min-h-[500px]">
+            <h2 class="text-lg font-bold text-gray-200 border-b border-gray-800 pb-2">منطقة العرض والمعاينة الفورية</h2>
+            
+            <div id="loading-spinner" class="hidden my-auto mx-auto flex flex-col items-center gap-3">
+                <div class="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+                <p class="text-sm text-gray-400">جاري الاتصال بسيرفر الذكاء الاصطناعي وبناء محتواك المخصص...</p>
+            </div>
+
+            <div id="output-area" class="flex flex-col gap-6 my-auto items-center justify-center text-center">
+                <div id="placeholder-view" class="text-gray-600 flex flex-col items-center gap-2">
+                    <span class="text-5xl">🌌</span>
+                    <p class="text-sm mt-2">لم يتم توليد أي محتوى بعد. اكتب البرومبت واضغط على أحد أزرار التوليد للبدء فورا!</p>
+                </div>
+
+                <div id="image-result-container" class="hidden w-full max-w-sm rounded-xl overflow-hidden border border-gray-800 shadow-2xl">
+                    <img id="image-output" src="" alt="مخرج الذكاء الاصطناعي" class="w-full h-auto object-cover">
+                    <div class="bg-gray-950 p-3 text-xs text-right border-t border-gray-800 text-gray-400">صورة مستضافة حية من موديل FLUX.1 ⚡️</div>
+                </div>
+
+                <div id="audio-result-container" class="hidden w-full max-w-md bg-gray-950 p-4 border border-gray-800 rounded-xl flex flex-col gap-3">
+                    <p class="text-xs text-indigo-400 font-medium text-right">🔊 ملفك الصوتي جاهز للاستخدام والمونتاج:</p>
+                    <audio id="audio-output" controls class="w-full h-10 mt-1"></audio>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // ضع هنا رابط سيرفر FastAPI الخاص بك بعد رفعه على Render
+        // للتجربة المحلية يمكنك استخدام 'http://127.0.0.1:8000'
+        const BACKEND_API_URL = "https://your-fastapi-server-link.onrender.com"; 
+        const userEmail = "test@tayyibat.com"; // بريد افتراضي للتجربة وتخزين البيانات بالداتابيز
+
+        async function generateContent(type) {
+            const prompt = document.getElementById("prompt-input").value.trim();
+            const voice = document.getElementById("voice-select").value;
+
+            if (!prompt) {
+                alert("من فضلك اكتب نصاً أولاً قبل الضغط على أزرار التوليد!");
+                return;
+            }
+
+            // إظهار شاشة التحميل وإخفاء النتائج السابقة
+            document.getElementById("placeholder-view").classList.add("hidden");
+            document.getElementById("image-result-container").classList.add("hidden");
+            document.getElementById("audio-result-container").classList.add("hidden");
+            document.getElementById("loading-spinner").classList.remove("hidden");
+
+            let endpoint = `${BACKEND_API_URL}/api/generate-image/`;
+            if (type === 'audio') endpoint = `${BACKEND_API_URL}/api/generate-audio/`;
+            if (type === 'video') endpoint = `${BACKEND_API_URL}/api/generate-video/`;
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        email: userEmail,
+                        prompt: prompt,
+                        voice_name: voice
+                    })
+                });
+
+                const data = await response.json();
+                document.getElementById("loading-spinner").classList.add("hidden");
+
+                if (response.status !== 200) {
+                    throw new Error(data.detail || "حدث خطأ غير متوقع بالسيرفر");
+                }
+
+                // التعامل مع مخرجات الصور
+                if (type === 'image') {
+                    document.getElementById("image-output").src = data.image_url;
+                    document.getElementById("image-result-container").classList.remove("hidden");
+                    updateCredits();
+                } 
+                // التعامل مع مخرجات الصوت
+                else if (type === 'audio') {
+                    // السيرفر يرسل اسم الملف المحفوظ، يتم استدعاؤه مباشرة
+                    document.getElementById("audio-output").src = `${BACKEND_API_URL}/${data.file_name}`;
+                    document.getElementById("audio-result-container").classList.remove("hidden");
+                    updateCredits();
+                } else {
+                    alert("تم إرسال طلب الفيديو وسيقوم الخادم بتسجيل الرابط بداتابيز رندر الخاصة بك!");
+                }
+
+            } catch (error) {
+                document.getElementById("loading-spinner").classList.add("hidden");
+                document.getElementById("placeholder-view").classList.remove("hidden");
+                alert(`فشل التوليد: ${error.message}`);
+            }
+        }
+
+        // دالة وهمية لمحاكاة خصم النقاط على الشاشة لحين ربطها كلياً بالداتابيز
+        function updateCredits() {
+            let currentCredits = parseInt(document.getElementById("credits-count").innerText);
+            if (currentCredits > 0) {
+                document.getElementById("credits-count").innerText = currentCredits - 1;
+            }
+        }
+    </script>
+</body>
+</html>
