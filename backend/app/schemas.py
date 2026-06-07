@@ -23,3 +23,23 @@ class AuthResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserResponse
+from typing import Optional
+from datetime import datetime
+
+class ProjectCreateRequest(BaseModel):
+    title: str
+    type: str = "SCRIPT"
+    description: Optional[str] = None
+
+class ProjectResponse(BaseModel):
+    id: str
+    user_id: str
+    title: str
+    type: str
+    status: str
+    description: Optional[str]
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
