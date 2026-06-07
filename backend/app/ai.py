@@ -1,10 +1,14 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+from fastapi import HTTPException
+from app.models import Audio
+from app.schemas import VoiceGenerateRequest, AudioResponse
 
 from app.database import get_db
 from app.models import Project, Script, User
 from app.schemas import ScriptGenerateRequest, ScriptResponse
 from app.dependencies import get_current_user
+
 
 router = APIRouter(prefix="/ai", tags=["AI"])
 
