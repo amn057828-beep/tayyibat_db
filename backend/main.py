@@ -1,11 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.database import Base, engine
 from app.auth import router as auth_router
 from app.projects import router as projects_router
 from app.ai import router as ai_router
 from app.users import router as users_router
+app.mount("/generated", StaticFiles(directory="generated"), name="generated")
 
 Base.metadata.create_all(bind=engine)
 
