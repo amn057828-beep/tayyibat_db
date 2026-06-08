@@ -239,7 +239,7 @@ def render_video(
     if not os.path.exists(local_audio_path):
         raise HTTPException(status_code=400, detail="Audio file not found on server")
 
-    width, height = 1280, 720
+    width, height = 854, 480
     image = Image.new("RGB", (width, height), color=(15, 23, 42))
     draw = ImageDraw.Draw(image)
 
@@ -267,19 +267,22 @@ def render_video(
     ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
 
     command = [
-        ffmpeg,
-        "-y",
-        "-loop", "1",
-        "-i", image_path,
-        "-i", local_audio_path,
-        "-c:v", "libx264",
-        "-tune", "stillimage",
-        "-c:a", "aac",
-        "-b:a", "192k",
-        "-pix_fmt", "yuv420p",
-        "-shortest",
-        video_path,
-    ]
+    ffmpeg,
+    "-y",
+    "-loop", "1",
+    "-framerate", "1",
+    "-i", image_path,
+    "-i", local_audio_path,
+    "-c:v", "libx264",
+    "-preset", "ultrafast",
+    "-tune", "stillimage",
+    "-c:a", "aac",
+    "-b:a", "96k",
+    "-pix_fmt", "yuv420p",
+    "-shortest",
+    "-movflags", "+faststart",
+    video_path,
+]
 
     try:
         subprocess.run(command, check=True, capture_output=True, text=True)
