@@ -13,3 +13,4 @@ email-validator
 requests
 pillow
 imageio-ffmpeg
+edge-tts
