@@ -57,6 +57,7 @@ class ScriptGenerateRequest(BaseModel):
     style: str = "educational"
     duration: int = 60
     project_id: Optional[str] = None
+    content_type: str = "general"
 
 
 class ScriptResponse(BaseModel):
