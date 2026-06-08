@@ -130,11 +130,15 @@ def generate_script(
 
 
 @router.post("/voice/mock", response_model=AudioResponse)
-def generate_mock_voice(
+async def generate_mock_voice(
     payload: VoiceGenerateRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    import os
+    import uuid
+    import edge_tts
+
     project = (
         db.query(Project)
         .filter(Project.id == payload.project_id, Project.user_id == current_user.id)
@@ -144,26 +148,34 @@ def generate_mock_voice(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    if payload.script_id:
-        script = (
-            db.query(Script)
-            .filter(
-                Script.id == payload.script_id,
-                Script.project_id == payload.project_id,
-                Script.user_id == current_user.id,
-            )
-            .first()
-        )
-
-        if not script:
-            raise HTTPException(status_code=404, detail="Script not found")
-
     credits_needed = max(1, len(payload.text) // 500)
 
     if current_user.credits < credits_needed:
         raise HTTPException(status_code=402, detail="Not enough credits")
 
-    mock_audio_url = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+    os.makedirs("generated", exist_ok=True)
+
+    file_id = str(uuid.uuid4())
+    audio_path = f"generated/{file_id}.mp3"
+
+    voice_map = {
+        "arabic_default": "ar-SA-HamedNeural",
+        "arabic_male": "ar-SA-HamedNeural",
+        "arabic_female": "ar-SA-ZariyahNeural",
+        "english_male": "en-US-GuyNeural",
+        "english_female": "en-US-JennyNeural",
+    }
+
+    selected_voice = voice_map.get(payload.voice_name, "ar-SA-HamedNeural")
+
+    communicate = edge_tts.Communicate(
+        text=payload.text,
+        voice=selected_voice
+    )
+
+    await communicate.save(audio_path)
+
+    audio_url = f"/generated/{file_id}.mp3"
 
     audio = Audio(
         project_id=payload.project_id,
@@ -171,7 +183,7 @@ def generate_mock_voice(
         script_id=payload.script_id,
         text=payload.text,
         voice_name=payload.voice_name,
-        audio_url=mock_audio_url,
+        audio_url=audio_url,
         credits_used=credits_needed,
         duration_seconds=30,
     )
