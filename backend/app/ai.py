@@ -3,22 +3,23 @@ import uuid
 import textwrap
 import subprocess
 import requests
+
 from PIL import Image, ImageDraw, ImageFont
 import imageio_ffmpeg
-
-from app.models import Video
-from app.schemas import VideoRenderRequest, VideoResponse
+import edge_tts
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Project, Script, User, Audio
+from app.models import Project, Script, User, Audio, Video
 from app.schemas import (
     ScriptGenerateRequest,
     ScriptResponse,
     VoiceGenerateRequest,
     AudioResponse,
+    VideoRenderRequest,
+    VideoResponse,
 )
 from app.dependencies import get_current_user
 
@@ -135,10 +136,6 @@ async def generate_mock_voice(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    import os
-    import uuid
-    import edge_tts
-
     project = (
         db.query(Project)
         .filter(Project.id == payload.project_id, Project.user_id == current_user.id)
@@ -170,7 +167,7 @@ async def generate_mock_voice(
 
     communicate = edge_tts.Communicate(
         text=payload.text,
-        voice=selected_voice
+        voice=selected_voice,
     )
 
     await communicate.save(audio_path)
@@ -196,6 +193,7 @@ async def generate_mock_voice(
 
     return audio
 
+
 @router.post("/video/render", response_model=VideoResponse)
 def render_video(
     payload: VideoRenderRequest,
@@ -220,18 +218,27 @@ def render_video(
 
     file_id = str(uuid.uuid4())
     image_path = f"generated/{file_id}.png"
-    audio_path = f"generated/{file_id}.mp3"
+    downloaded_audio_path = f"generated/{file_id}.mp3"
     video_path = f"generated/{file_id}.mp4"
 
-    # Download audio
-    audio_response = requests.get(payload.audio_url, timeout=30)
-    if audio_response.status_code != 200:
-        raise HTTPException(status_code=400, detail="Failed to download audio")
+    # Resolve audio source
+    if payload.audio_url.startswith("/generated/"):
+        local_audio_path = payload.audio_url.replace("/generated/", "generated/", 1)
+    elif "/generated/" in payload.audio_url:
+        local_audio_path = "generated/" + payload.audio_url.split("/generated/")[-1]
+    else:
+        audio_response = requests.get(payload.audio_url, timeout=30)
+        if audio_response.status_code != 200:
+            raise HTTPException(status_code=400, detail="Failed to download audio")
 
-    with open(audio_path, "wb") as f:
-        f.write(audio_response.content)
+        with open(downloaded_audio_path, "wb") as f:
+            f.write(audio_response.content)
 
-    # Create background image
+        local_audio_path = downloaded_audio_path
+
+    if not os.path.exists(local_audio_path):
+        raise HTTPException(status_code=400, detail="Audio file not found on server")
+
     width, height = 1280, 720
     image = Image.new("RGB", (width, height), color=(15, 23, 42))
     draw = ImageDraw.Draw(image)
@@ -239,11 +246,11 @@ def render_video(
     try:
         font_title = ImageFont.truetype(
             "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-            56
+            56,
         )
         font_text = ImageFont.truetype(
             "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-            34
+            34,
         )
     except Exception:
         font_title = ImageFont.load_default()
@@ -264,7 +271,7 @@ def render_video(
         "-y",
         "-loop", "1",
         "-i", image_path,
-        "-i", audio_path,
+        "-i", local_audio_path,
         "-c:v", "libx264",
         "-tune", "stillimage",
         "-c:a", "aac",
@@ -274,7 +281,13 @@ def render_video(
         video_path,
     ]
 
-    subprocess.run(command, check=True)
+    try:
+        subprocess.run(command, check=True, capture_output=True, text=True)
+    except subprocess.CalledProcessError as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"FFmpeg failed: {exc.stderr[-1000:]}",
+        )
 
     public_url = f"/generated/{file_id}.mp4"
 
