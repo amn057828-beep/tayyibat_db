@@ -116,3 +116,22 @@ class VideoResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class SceneGenerateRequest(BaseModel):
+    project_id: str
+    script_id: str
+    text: str
+
+class SceneResponse(BaseModel):
+    id: str
+    project_id: str
+    script_id: str
+    scene_number: int
+    text: str
+    image_prompt: str
+    image_url: Optional[str]
+    duration_seconds: int
+    created_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
