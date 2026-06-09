@@ -89,3 +89,17 @@ class Video(Base):
     credits_used = Column(Integer, default=2)
     duration_seconds = Column(Integer, default=30)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class Scene(Base):
+    __tablename__ = "scenes"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    project_id = Column(String, ForeignKey("projects.id"), nullable=False, index=True)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
+    script_id = Column(String, ForeignKey("scripts.id"), nullable=False, index=True)
+    scene_number = Column(Integer, nullable=False)
+    text = Column(String, nullable=False)
+    image_prompt = Column(String, nullable=False)
+    image_url = Column(String, nullable=True)
+    duration_seconds = Column(Integer, default=6)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
