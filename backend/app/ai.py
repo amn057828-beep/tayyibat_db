@@ -288,3 +288,87 @@ def render_video(
     db.commit()
     db.refresh(video)
     return video
+
+@router.post("/scenes/generate", response_model=list[SceneResponse])
+def generate_scenes(
+    payload: SceneGenerateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    project = (
+        db.query(Project)
+        .filter(Project.id == payload.project_id, Project.user_id == current_user.id)
+        .first()
+    )
+
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    script = (
+        db.query(Script)
+        .filter(
+            Script.id == payload.script_id,
+            Script.project_id == payload.project_id,
+            Script.user_id == current_user.id,
+        )
+        .first()
+    )
+
+    if not script:
+        raise HTTPException(status_code=404, detail="Script not found")
+
+    paragraphs = [
+        p.strip()
+        for p in payload.text.split("\n")
+        if p.strip()
+    ]
+
+    if len(paragraphs) < 3:
+        paragraphs = [
+            s.strip()
+            for s in payload.text.replace("؟", ".").replace("!", ".").split(".")
+            if len(s.strip()) > 20
+        ]
+
+    selected = paragraphs[:8]
+
+    old_scenes = (
+        db.query(Scene)
+        .filter(Scene.script_id == payload.script_id, Scene.user_id == current_user.id)
+        .all()
+    )
+
+    for item in old_scenes:
+        db.delete(item)
+
+    db.commit()
+
+    scenes = []
+
+    for index, text in enumerate(selected, start=1):
+        image_prompt = (
+            "Cinematic realistic scene, deep emotional atmosphere, "
+            "high quality, soft lighting, no text, no letters, "
+            f"visual metaphor for: {text[:250]}"
+        )
+
+        scene = Scene(
+            project_id=payload.project_id,
+            user_id=current_user.id,
+            script_id=payload.script_id,
+            scene_number=index,
+            text=text,
+            image_prompt=image_prompt,
+            image_url=None,
+            duration_seconds=6,
+        )
+
+        db.add(scene)
+        scenes.append(scene)
+
+    db.commit()
+
+    for scene in scenes:
+        db.refresh(scene)
+
+    return scenes
